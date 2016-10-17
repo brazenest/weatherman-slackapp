@@ -38,11 +38,12 @@ if(
 		'forecastType'	=> DEFAULT_FORECAST_TYPE,
 		'latitude'			=> DEFAULT_LOCATION_LATITUDE,
 		'longitude'			=> DEFAULT_LOCATION_LONGITUDE,
+		'location'			=> 'at Concepta HQ',
 	];
 
 	$weatherData = requestWeather( $weatherRequestParams );
 
-	$slackResponse = new SlackResponse( 'Current conditions at Concepta HQ:' );
+	$slackResponse = new SlackResponse( 'Current conditions ' . $weatherRequestParams[ 'location' ] );
 
 	$weather = $weatherData->{DEFAULT_FORECAST_TYPE}; // i.e. `currently`
 	$responseDetailsText = ( (int) $weather->temperature ) . '° ' . $weather->summary . " \n winds " . ( (int) $weather->windSpeed ) . ' mph from ' . DarkskyApi::convertDegreesToCompass( $weather->windBearing );
