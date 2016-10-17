@@ -3,14 +3,20 @@ namespace AldenG\Slackapps\Weather;
 
 require_once __DIR__ . '/lib/Darksky/ApiClient.class.php';
 require_once __DIR__ . '/lib/Slack/Response.class.php';
+require_once __DIR__ . '/lib/GoogleMapsWebServices/GeocodingSdk/ApiClient.class.php';
+require_once __DIR__ . '/lib/GoogleMapsWebServices/GeocodingSdk/Exceptions/InvalidZipcodeException.class.php';
 
 use AldenG\DarkskySdk\ApiClient as DarkskyApi;
 use AldenG\SlackSdk\Response as SlackResponse;
 use AldenG\SlackSdk\ResponseAttachment as SlackResponseAttachment;
 
+use AldenG\GoogleMapsWebServices\GeocodingSdk\ApiClient as GeocodingApi;
+use AldenG\GoogleMapsWebServices\GeocodingSdk\Exceptions\InvalidZipcodeException as InvalidZipcodeException;
+
 // Requirements:
 define( 'SLACK_COMMAND_TOKEN', 				'GPJWCJYsbHH06DpoLwbLVsBy' );
 define( 'DARKSKY_API_SECRET',					'b6876b3993226c84627ba2a331ed697b' );
+define( 'GEOCODING_API_SECRET',				'AIzaSyBQM7dPovqPEwOg1-rVy9Xv1uOqADnop1U' );
 
 // Defaults:
 define( 'DEFAULT_ENDPOINT_NAME',			'forecast' );
@@ -40,6 +46,22 @@ if(
 		'longitude'			=> DEFAULT_LOCATION_LONGITUDE,
 		'location'			=> 'at Concepta HQ',
 	];
+// if the request has argument(s)...
+if( isset( $_POST[ 'text' ] ) && ! empty( trim( $_POST[ 'text' ] ) ) ) {
+	try {
+		// translate the argument into a coordinates tuple.
+		$geocodingApi = new GeocodingApi( GEOCODING_API_SECRET );
+		$geodata = $geocodingApi->locateByZipCode( (int) trim( $_POST[ 'text' ] ) );
+
+		$weatherRequestParams[ 'latitude' ] 	= $geodata[ 'latitude' ];
+		$weatherRequestParams[ 'longitude' ]	= $geodata[ 'longitude' ];
+		$weatherRequestParams[ 'location' ]		= 'for ' . $geodata[ 'location' ];
+	}
+	catch( InvalidZipcodeException $e )
+	{
+		// for now, we do nothing here, as we've already set defaults.
+	}
+}
 
 	$weatherData = requestWeather( $weatherRequestParams );
 
