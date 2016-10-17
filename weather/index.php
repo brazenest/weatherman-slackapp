@@ -49,8 +49,8 @@ if(
 	$responseDetailsText = ( (int) $weather->temperature ) . '° ' . $weather->summary . " \n winds " . ( (int) $weather->windSpeed ) . ' mph from ' . DarkskyApi::convertDegreesToCompass( $weather->windBearing );
 	$slackResponse->addAttachment( new SlackResponseAttachment( $responseDetailsText ) );
 
-	header( $_SERVER[ 'SERVER_PROTOCOL' ] . ' 200 OK' );
 	header( 'Content-Type: application/json' );
+http_response_code(200);
 
 	echo json_encode( $slackResponse );
 
