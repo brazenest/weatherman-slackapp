@@ -20,7 +20,7 @@ if(
 	|| ( $_POST[ 'token' ] !== SLACK_COMMAND_TOKEN )
 )
 {
-	header( $_SERVER[ 'SERVER_PROTOCOL' ] . ' 401 Unauthorized' );
+	http_response_code(403);
 	exit;
 }
 
