@@ -1,6 +1,13 @@
 <?php
 namespace AldenG\Slackapps\Weather;
 
+require_once __DIR__ . '/lib/Darksky/ApiClient.class.php';
+require_once __DIR__ . '/lib/Slack/Response.class.php';
+
+use AldenG\DarkskySdk\ApiClient as DarkskyApi;
+use AldenG\SlackSdk\Response as SlackResponse;
+use AldenG\SlackSdk\ResponseAttachment as SlackResponseAttachment;
+
 // Requirements:
 define( 'SLACK_COMMAND_TOKEN', 				'GPJWCJYsbHH06DpoLwbLVsBy' );
 define( 'DARKSKY_API_SECRET',					'b6876b3993226c84627ba2a331ed697b' );
@@ -112,143 +119,4 @@ function requestWeather( $requestParams )
 	$response = file_get_contents( $url );
 
 	return json_decode( $response );
-}
-
-/**
-	* SlackResponse
-	*/
-class SlackResponse {
-
-	public $response_type, $text, $attachments;
-
-	const VALID_RESPONSE_TYPES = [
-		'ephemeral',
-		'in_channel'
-	];
-	const DEFAULT_RESPONSE_TYPE = self::VALID_RESPONSE_TYPES[0];
-
-	function __construct( string $text = null )
-	{
-		$this->response_type	= self::DEFAULT_RESPONSE_TYPE;
-		$this->text						= $text;
-		$this->attachments		= [];
-	}
-
-	function setResponseType( $responseType )
-	{
-		if( ! in_array( $responseType, self::VALID_RESPONSE_TYPES ) )
-		{
-			throw new \Exception( 'Response type is invalid.' );
-		}
-
-		$this->response_type	= $responseType;
-	}
-
-	function setText( string $text )
-	{
-		$this->text = $text;
-	}
-
-	function addAttachment( SlackResponseAttachment $attachment )
-	{
-		$this->attachments[] = $attachment;
-	}
-}
-
-/**
-	* SlackResponseAttachment
-	*/
-class SlackResponseAttachment {
-
-	public $title, $text;
-
-	function __construct( string $text, string $title = null )
-	{
-		$this->text		= $text;
-		$this->title	= $title;
-	}
-
-	function getTitle()
-	{
-		return $this->title;
-	}
-
-	function getText()
-	{
-		return $this->text;
-	}
-
-}
-
-/**
-	* DarkskyApi
-	*
-	* The driver for RESTful activity with the Dark Sky API (formerly forecast.io)
-	*/
-class DarkskyApi {
-
-	const VALID_DATA_BLOCKS = [
-		'currently',
-		'minutely',
-		'hourly',
-		'daily',
-		'alerts',
-		'flags',
-	];
-	const ENDPOINT_BASE	= 'https://api.darksky.net';
-
-	public static function makeEndpointUrl( string $endpointName, array $urlSegments, array $queryParams = [] )
-	{
-		$urlArray	= [
-			self::ENDPOINT_BASE,
-			$endpointName,
-			implode( '/', $urlSegments ),
-		];
-
-		return implode( '/', $urlArray ) . '?' . http_build_query( $queryParams );
-	}
-
-	public static function convertDegreesToCompass( $deg )
-	{
-		settype( $deg, 'float' );
-		$text = $deg;
-
-		// begin with midpoint at due north. subsequent compass directions are found at successive 22.5-degree rotations.
-		if( $deg < 11.25 || $deg >= 348.75 ) {
-			$text = 'N';
-		} elseif( $deg < 33.75 ) {
-			$text = 'NNE';
-		} elseif( $deg < 56.25 ) {
-			$text = 'NE';
-		} elseif( $deg < 78.75 ) {
-			$text = 'ENE';
-		} elseif( $deg < 101.25 ) {
-			$text = 'E';
-		} elseif( $deg < 123.75 ) {
-			$text = 'ESE';
-		} elseif( $deg < 146.25 ) {
-			$text = 'SE';
-		} elseif( $deg < 168.75 ) {
-			$text = 'SSE';
-		} elseif( $deg < 191.25 ) {
-			$text = 'S';
-		} elseif( $deg < 213.75 ) {
-			$text = 'SSW';
-		} elseif( $deg < 236.25 ) {
-			$text = 'SW';
-		} elseif( $deg < 258.75 ) {
-			$text = 'WSW';
-		} elseif( $deg < 281.25 ) {
-			$text = 'W';
-		} elseif( $deg < 303.75 ) {
-			$text = 'WNW';
-		} elseif( $deg < 326.25 ) {
-			$text = 'NW';
-		} elseif( $deg < 348.75 ) {
-			$text = 'NNW';
-		}
-
-		return $text;
-	}
-
 }
