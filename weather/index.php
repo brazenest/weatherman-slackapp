@@ -31,13 +31,6 @@ if(
 	exit;
 }
 
-processRequest();
-
-/**
-	* The main function.
-	*/
-function processRequest()
-{
 
 	// sendAdminNotification();
 
@@ -59,7 +52,6 @@ function processRequest()
 	header( 'Content-Type: application/json' );
 
 	echo json_encode( $slackResponse );
-}
 
 /**
 	* Sends a REST message to Slack, to report a use of the `/weather` slash command.
