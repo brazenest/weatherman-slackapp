@@ -61,7 +61,7 @@ if( isset( $_POST[ 'text' ] ) && ! empty( trim( $_POST[ 'text' ] ) ) ) {
 	try {
 		// translate the argument into a coordinates tuple.
 		$geocodingApi = new GeocodingApi( GEOCODING_API_SECRET );
-		$geodata = $geocodingApi->locateByZipCode( (int) trim( $_POST[ 'text' ] ) );
+		$geodata = $geocodingApi->locate( trim( $_POST[ 'text' ] ) );
 
 		$weatherRequestParams[ 'latitude' ] 	= $geodata[ 'latitude' ];
 		$weatherRequestParams[ 'longitude' ]	= $geodata[ 'longitude' ];

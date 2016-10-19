@@ -26,6 +26,19 @@ class ApiClient {
 		];
 	}
 
+	public function locate( string $address )
+	{
+		$response = $this->request( 'address', [
+			'address'	=> $address,
+		]);
+
+		return [
+			'latitude'	=> round( (float) $response->results[0]->geometry->location->lat, 3 ),
+			'longitude'	=> round( (float) $response->results[0]->geometry->location->lng, 3 ),
+			'location'	=> $response->results[0]->formatted_address,
+		];
+	}
+	
 	private function request( string $requestType, array $params )
 	{
 		$request = new ApiRequest( $this->apiSecret, $requestType );
