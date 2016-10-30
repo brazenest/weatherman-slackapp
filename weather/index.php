@@ -12,11 +12,13 @@
 namespace AldenG\Slackapps\Weather;
 
 require_once __DIR__ . '/lib/Darksky/ApiClient.class.php';
+require_once __DIR__ . '/lib/Darksky/DataPoint.class.php';
 require_once __DIR__ . '/lib/Slack/Response.class.php';
 require_once __DIR__ . '/lib/GoogleMapsWebServices/GeocodingSdk/ApiClient.class.php';
 require_once __DIR__ . '/lib/GoogleMapsWebServices/GeocodingSdk/Exceptions/InvalidZipcodeException.class.php';
 
 use AldenG\DarkskySdk\ApiClient as DarkskyApi;
+use AldenG\DarkskySdk\DataPoint as DarkskyDataPoint;
 use AldenG\SlackSdk\Response as SlackResponse;
 use AldenG\SlackSdk\ResponseAttachment as SlackResponseAttachment;
 
@@ -116,8 +118,8 @@ if( isset( $ARGS[ 'text' ] ) && ! empty( trim( $ARGS[ 'text' ] ) ) ) {
 
 	$slackResponse = new SlackResponse( 'Current conditions ' . $weatherRequestParams[ 'location' ] );
 
-	$responseDetailsText = ( (int) $weather->temperature ) . '° ' . $weather->summary . " \n winds " . ( (int) $weather->windSpeed ) . ' mph from ' . DarkskyApi::convertDegreesToCompass( $weather->windBearing );
 	$weather = $weatherData->{$weatherRequestParams['forecastType']}; // i.e. `currently`
+	$responseDetailsText = ( DarkskyDataPoint::ICON_EMOJI_CODES[$weather->icon] . ' *' . (int) $weather->temperature ) . '°* ' . $weather->summary . " \n winds " . ( (int) $weather->windSpeed ) . ' mph from ' . DarkskyDataPoint::convertDegreesToCompass( $weather->windBearing );
 	$slackResponse->addAttachment( new SlackResponseAttachment( $responseDetailsText ) );
 
 	header( 'Content-Type: application/json' );
