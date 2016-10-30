@@ -116,8 +116,8 @@ if( isset( $ARGS[ 'text' ] ) && ! empty( trim( $ARGS[ 'text' ] ) ) ) {
 
 	$slackResponse = new SlackResponse( 'Current conditions ' . $weatherRequestParams[ 'location' ] );
 
-	$weather = $weatherData->{DEFAULT_FORECAST_TYPE}; // i.e. `currently`
 	$responseDetailsText = ( (int) $weather->temperature ) . '° ' . $weather->summary . " \n winds " . ( (int) $weather->windSpeed ) . ' mph from ' . DarkskyApi::convertDegreesToCompass( $weather->windBearing );
+	$weather = $weatherData->{$weatherRequestParams['forecastType']}; // i.e. `currently`
 	$slackResponse->addAttachment( new SlackResponseAttachment( $responseDetailsText ) );
 
 	header( 'Content-Type: application/json' );
