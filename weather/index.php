@@ -5,7 +5,7 @@
 	* @copyright 2016 Alden Gillespy
 	* @license Proprietary. All rights reserved.
 	* @author Alden Gillespy
-	* @version 1.2
+	* @version 1.2.1
 	* @since 1.0
 	* @package AldenG_Slackapps
 	*/
