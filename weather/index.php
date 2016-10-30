@@ -78,6 +78,19 @@ if( isset( $ARGS[ 'text' ] ) && ! empty( trim( $ARGS[ 'text' ] ) ) ) {
 			$argSwitch = substr($argString, 1);
 			$argString = null;
 		}
+
+		switch( $argSwitch )
+		{
+
+			case '?':
+
+				$response = new SlackResponse();
+				$response->addAttachment( new SlackResponseAttachment("version " . APP_VERSION_NUMBER . " (" . APP_VERSION_DATE . ")\n© " . date('Y') . " Alden Gillespy", "About Weatherman") );
+				header('Content-Type: application/json');
+				http_response_code(200);
+				echo json_encode( $response );
+				die();
+		}
 	}
 
 	if( isset($argString) )
