@@ -34,13 +34,16 @@ define( 'DEFAULT_FORECAST_TYPE',			'currently' );
 define( 'DEFAULT_LOCATION_LATITUDE', 	28.480 );
 define( 'DEFAULT_LOCATION_LONGITUDE',	-81.455 );
 
+define( 'REQUEST_TYPE', '_POST');
+
+$ARGS =& ${REQUEST_TYPE};
 /*
 	Begin the script.
 */
 
 if(
-	! array_key_exists( 'token', $_POST )
-	|| ( $_POST[ 'token' ] !== SLACK_COMMAND_TOKEN )
+	! array_key_exists( 'token', $ARGS )
+	|| ( $ARGS[ 'token' ] !== SLACK_COMMAND_TOKEN )
 )
 {
 	http_response_code(403);
@@ -57,9 +60,9 @@ if(
 		'location'			=> 'at Concepta HQ',
 	];
 // if the request has argument(s)...
-if( isset( $_POST[ 'text' ] ) && ! empty( trim( $_POST[ 'text' ] ) ) ) {
+if( isset( $ARGS[ 'text' ] ) && ! empty( trim( $ARGS[ 'text' ] ) ) ) {
 
-	$argString = trim( $_POST[ 'text' ] );
+	$argString = trim( $ARGS[ 'text' ] );
 	$argSwitchEndPos = strpos($argString, ' ');
 
 	if( 0 === strpos($argString, '-') )
