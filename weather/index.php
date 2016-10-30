@@ -23,6 +23,10 @@ use AldenG\SlackSdk\ResponseAttachment as SlackResponseAttachment;
 use AldenG\GoogleMapsWebServices\GeocodingSdk\ApiClient as GeocodingApi;
 use AldenG\GoogleMapsWebServices\GeocodingSdk\Exceptions\InvalidZipcodeException as InvalidZipcodeException;
 
+// App descriptors:
+define( 'APP_VERSION_NUMBER',					'1.2.1' );
+define( 'APP_VERSION_DATE',						'2016-10-30' );
+
 // Requirements:
 define( 'SLACK_COMMAND_TOKEN', 				'GPJWCJYsbHH06DpoLwbLVsBy' );
 define( 'DARKSKY_API_SECRET',					'b6876b3993226c84627ba2a331ed697b' );
