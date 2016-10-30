@@ -58,10 +58,27 @@ if(
 	];
 // if the request has argument(s)...
 if( isset( $_POST[ 'text' ] ) && ! empty( trim( $_POST[ 'text' ] ) ) ) {
+
+	$argString = trim( $_POST[ 'text' ] );
+	$argSwitchEndPos = strpos($argString, ' ');
+
+	if( 0 === strpos($argString, '-') )
+	{
+		if( false !== $argSwitchEndPos ) {
+			$argSwitch = substr($argString, 1, $argSwitchEndPos);
+			$argString = substr($argString, trim($argSwitchEndPos+1) );
+		} else {
+			$argSwitch = substr($argString, 1);
+			$argString = null;
+		}
+	}
+
+	if( isset($argString) )
+	{
 	try {
 		// translate the argument into a coordinates tuple.
 		$geocodingApi = new GeocodingApi( GEOCODING_API_SECRET );
-		$geodata = $geocodingApi->locate( trim( $_POST[ 'text' ] ) );
+		$geodata = $geocodingApi->locate( $argString );
 
 		$weatherRequestParams[ 'latitude' ] 	= $geodata[ 'latitude' ];
 		$weatherRequestParams[ 'longitude' ]	= $geodata[ 'longitude' ];
@@ -71,6 +88,8 @@ if( isset( $_POST[ 'text' ] ) && ! empty( trim( $_POST[ 'text' ] ) ) ) {
 	{
 		// for now, we do nothing here, as we've already set defaults.
 	}
+	}
+
 }
 
 	$weatherData = requestWeather( $weatherRequestParams );
