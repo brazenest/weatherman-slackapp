@@ -5,23 +5,29 @@
 	* @copyright 2016 Alden Gillespy
 	* @license Proprietary. All rights reserved.
 	* @author Alden Gillespy
-	* @version 1.2
+	* @version 1.2.1
 	* @since 1.0
 	* @package AldenG_Slackapps
 	*/
 namespace AldenG\Slackapps\Weather;
 
 require_once __DIR__ . '/lib/Darksky/ApiClient.class.php';
+require_once __DIR__ . '/lib/Darksky/DataPoint.class.php';
 require_once __DIR__ . '/lib/Slack/Response.class.php';
 require_once __DIR__ . '/lib/GoogleMapsWebServices/GeocodingSdk/ApiClient.class.php';
 require_once __DIR__ . '/lib/GoogleMapsWebServices/GeocodingSdk/Exceptions/InvalidZipcodeException.class.php';
 
 use AldenG\DarkskySdk\ApiClient as DarkskyApi;
+use AldenG\DarkskySdk\DataPoint as DarkskyDataPoint;
 use AldenG\SlackSdk\Response as SlackResponse;
 use AldenG\SlackSdk\ResponseAttachment as SlackResponseAttachment;
 
 use AldenG\GoogleMapsWebServices\GeocodingSdk\ApiClient as GeocodingApi;
 use AldenG\GoogleMapsWebServices\GeocodingSdk\Exceptions\InvalidZipcodeException as InvalidZipcodeException;
+
+// App descriptors:
+define( 'APP_VERSION_NUMBER',					'1.2.1' );
+define( 'APP_VERSION_DATE',						'2016-10-30' );
 
 // Requirements:
 define( 'SLACK_COMMAND_TOKEN', 				'GPJWCJYsbHH06DpoLwbLVsBy' );
@@ -34,13 +40,16 @@ define( 'DEFAULT_FORECAST_TYPE',			'currently' );
 define( 'DEFAULT_LOCATION_LATITUDE', 	28.480 );
 define( 'DEFAULT_LOCATION_LONGITUDE',	-81.455 );
 
+define( 'REQUEST_TYPE', '_POST');
+
+$ARGS =& ${REQUEST_TYPE};
 /*
 	Begin the script.
 */
 
 if(
-	! array_key_exists( 'token', $_POST )
-	|| ( $_POST[ 'token' ] !== SLACK_COMMAND_TOKEN )
+	! array_key_exists( 'token', $ARGS )
+	|| ( $ARGS[ 'token' ] !== SLACK_COMMAND_TOKEN )
 )
 {
 	http_response_code(403);
@@ -57,11 +66,41 @@ if(
 		'location'			=> 'at Concepta HQ',
 	];
 // if the request has argument(s)...
-if( isset( $_POST[ 'text' ] ) && ! empty( trim( $_POST[ 'text' ] ) ) ) {
+if( isset( $ARGS[ 'text' ] ) && ! empty( trim( $ARGS[ 'text' ] ) ) ) {
+
+	$argString = trim( $ARGS[ 'text' ] );
+	$argSwitchEndPos = strpos($argString, ' ');
+
+	if( 0 === strpos($argString, '-') )
+	{
+		if( false !== $argSwitchEndPos ) {
+			$argSwitch = substr($argString, 1, $argSwitchEndPos);
+			$argString = substr($argString, trim($argSwitchEndPos+1) );
+		} else {
+			$argSwitch = substr($argString, 1);
+			$argString = null;
+		}
+
+		switch( $argSwitch )
+		{
+
+			case '?':
+
+				$response = new SlackResponse();
+				$response->addAttachment( new SlackResponseAttachment("version " . APP_VERSION_NUMBER . " (" . APP_VERSION_DATE . ")\n© " . date('Y') . " Alden Gillespy", "About Weatherman") );
+				header('Content-Type: application/json');
+				http_response_code(200);
+				echo json_encode( $response );
+				die();
+		}
+	}
+
+	if( isset($argString) )
+	{
 	try {
 		// translate the argument into a coordinates tuple.
 		$geocodingApi = new GeocodingApi( GEOCODING_API_SECRET );
-		$geodata = $geocodingApi->locate( trim( $_POST[ 'text' ] ) );
+		$geodata = $geocodingApi->locate( $argString );
 
 		$weatherRequestParams[ 'latitude' ] 	= $geodata[ 'latitude' ];
 		$weatherRequestParams[ 'longitude' ]	= $geodata[ 'longitude' ];
@@ -71,14 +110,16 @@ if( isset( $_POST[ 'text' ] ) && ! empty( trim( $_POST[ 'text' ] ) ) ) {
 	{
 		// for now, we do nothing here, as we've already set defaults.
 	}
+	}
+
 }
 
 	$weatherData = requestWeather( $weatherRequestParams );
 
 	$slackResponse = new SlackResponse( 'Current conditions ' . $weatherRequestParams[ 'location' ] );
 
-	$weather = $weatherData->{DEFAULT_FORECAST_TYPE}; // i.e. `currently`
-	$responseDetailsText = ( (int) $weather->temperature ) . '° ' . $weather->summary . " \n winds " . ( (int) $weather->windSpeed ) . ' mph from ' . DarkskyApi::convertDegreesToCompass( $weather->windBearing );
+	$weather = $weatherData->{$weatherRequestParams['forecastType']}; // i.e. `currently`
+	$responseDetailsText = ( DarkskyDataPoint::ICON_EMOJI_CODES[$weather->icon] . ' *' . (int) $weather->temperature ) . '°* ' . $weather->summary . " \n winds " . ( (int) $weather->windSpeed ) . ' mph from ' . DarkskyDataPoint::convertDegreesToCompass( $weather->windBearing );
 	$slackResponse->addAttachment( new SlackResponseAttachment( $responseDetailsText ) );
 
 	header( 'Content-Type: application/json' );
@@ -134,7 +175,7 @@ function requestWeather( $requestParams )
 
 	$queryParams	= [
 		'exclude'	=> implode( ',', array_diff( DarkskyApi::VALID_DATA_BLOCKS, (array) $requestParams[ 'forecastType' ] ) ),
-		'units'		=> 'auto',
+		'units'		=> 'us',
 		// 'extend'	=> 'hourly',
 		// 'lang'		=> 'en', // default is imperial units (`us`)
 	];
