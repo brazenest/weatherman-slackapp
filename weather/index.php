@@ -175,7 +175,7 @@ function requestWeather( $requestParams )
 
 	$queryParams	= [
 		'exclude'	=> implode( ',', array_diff( DarkskyApi::VALID_DATA_BLOCKS, (array) $requestParams[ 'forecastType' ] ) ),
-		'units'		=> 'auto',
+		'units'		=> 'us',
 		// 'extend'	=> 'hourly',
 		// 'lang'		=> 'en', // default is imperial units (`us`)
 	];
