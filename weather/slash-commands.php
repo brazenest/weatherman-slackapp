@@ -5,40 +5,41 @@
 	* @copyright 2016 Alden Gillespy
 	* @license Proprietary. All rights reserved.
 	* @author Alden Gillespy
-	* @version 1.2.2
+	* @version 1.3.0
 	* @since 1.0
 	* @package AldenG_Slackapps
 	*/
 namespace AldenG\Slackapps\Weather;
 
-require_once __DIR__ . '/lib/Darksky/ApiClient.class.php';
-require_once __DIR__ . '/lib/Darksky/DataPoint.class.php';
-require_once __DIR__ . '/lib/Slack/Response.class.php';
-require_once __DIR__ . '/lib/GoogleMapsWebServices/GeocodingSdk/ApiClient.class.php';
-require_once __DIR__ . '/lib/GoogleMapsWebServices/GeocodingSdk/Exceptions/InvalidZipcodeException.class.php';
 
-use AldenG\DarkskySdk\ApiClient as DarkskyApi;
-use AldenG\DarkskySdk\DataPoint as DarkskyDataPoint;
-use AldenG\SlackSdk\Response as SlackResponse;
+require_once __DIR__ . '/lib/Slack/CommandRequest.class.php';
+require_once __DIR__ . '/lib/Slack/CommandResponse.class.php';
+require_once __DIR__ . '/lib/Slack/ResponseAttachment.class.php';
+require_once __DIR__ . '/lib/Slack/Exceptions/InvalidCommandConfig.ex.php';
+require_once __DIR__ . '/lib/Slack/Exceptions/InvalidSlackToken.ex.php';
+
+use AldenG\SlackSdk\CommandRequest as SlashCommandRequest;
+use AldenG\SlackSdk\CommandResponse as SlackResponse;
 use AldenG\SlackSdk\ResponseAttachment as SlackResponseAttachment;
 
-use AldenG\GoogleMapsWebServices\GeocodingSdk\ApiClient as GeocodingApi;
-use AldenG\GoogleMapsWebServices\GeocodingSdk\Exceptions\InvalidZipcodeException as InvalidZipcodeException;
+use AldenG\SlackSdk\Exceptions\InvalidCommandConfig as InvalidCommandConfig;
+use AldenG\SlackSdk\Exceptions\InvalidSlackToken as InvalidSlackToken;
 
 // App descriptors:
-define( 'APP_VERSION_NUMBER',					'1.2.2' );
-define( 'APP_VERSION_DATE',						'2016-11-02' );
+define( 'APP_VERSION_NUMBER',	'1.3.0' );
+define( 'APP_VERSION_DATE',		'2016-12-26' );
 
 // Requirements:
 define( 'SLACK_COMMAND_TOKEN', 				'GPJWCJYsbHH06DpoLwbLVsBy' );
 define( 'DARKSKY_API_SECRET',					'b6876b3993226c84627ba2a331ed697b' );
 define( 'GEOCODING_API_SECRET',				'AIzaSyBQM7dPovqPEwOg1-rVy9Xv1uOqADnop1U' );
+define( 'ADMINS', [
+	'U0VTT5EHL', // @alden
+]);
+define( 'TEAMS', [
+	'T02996B3M' // concepta
+]);
 
-// Defaults:
-define( 'DEFAULT_ENDPOINT_NAME',			'forecast' );
-define( 'DEFAULT_FORECAST_TYPE',			'currently' );
-define( 'DEFAULT_LOCATION_LATITUDE', 	28.480 );
-define( 'DEFAULT_LOCATION_LONGITUDE',	-81.455 );
 
 define( 'REQUEST_TYPE', '_POST');
 
@@ -47,85 +48,63 @@ $ARGS =& ${REQUEST_TYPE};
 	Begin the script.
 */
 
-if(
-	! array_key_exists( 'token', $ARGS )
-	|| ( $ARGS[ 'token' ] !== SLACK_COMMAND_TOKEN )
-)
+;
+
+try {
+	$request = new SlashCommandRequest( $ARGS );
+	$response = $request->process();
+}
+catch ( InvalidCommandConfig $ex )
+{
+	$response	= new SlackResponse( "*Oh no!* :hushed: I couldn't understand you." );
+
+	$attachment	= new SlackResponseAttachment( '_Try `/weather help`_', 'Need some help? :persevere:' );
+	$attachment->setColor( 'warning' );
+
+	$response->addAttachment( $attachment );
+
+	// add Debug Info to requests made by administrator users.
+
+	if( in_array( $ARGS['team_id'], TEAMS ) && in_array( $ARGS['user_id'], ADMINS ) ) {
+		$debug_attachment = new SlackResponseAttachment( "_Here are some of the details..._ :sun_behind_cloud:", "Debug Info" );
+		$debug_attachment->addFooter( "You're seeing this info because I recognize you as an administrator. Please notify <@".ADMINS[0]."> if I'm mistaken!" );
+		$debug_attachment->setColor( '#183691' ); // dark blue
+		//$debug_attachment->setColor( '#795da3' ); // light purple
+		$debug_attachment->enableMarkdownInProperties([
+			'fields',
+		]);
+		$debug_attachment->addField( "```{$ex->getMessage()}```", 'Error message from PHP' );
+		foreach ( $ARGS as $param_name => $param_value ) {
+			$debug_attachment->addField( $param_value, $param_name, true );
+		}
+		$response->addAttachment( $debug_attachment );
+	}
+}
+catch ( InvalidSlackToken $ex )
 {
 	http_response_code(403);
 	exit;
 }
 
 
-	// sendAdminNotification();
+// sendAdminNotification();
 
-	$weatherRequestParams = [
-		'forecastType'	=> DEFAULT_FORECAST_TYPE,
-		'latitude'			=> DEFAULT_LOCATION_LATITUDE,
-		'longitude'			=> DEFAULT_LOCATION_LONGITUDE,
-		'location'			=> 'at Concepta HQ',
-	];
-// if the request has argument(s)...
-if( isset( $ARGS[ 'text' ] ) && ! empty( trim( $ARGS[ 'text' ] ) ) ) {
+render_response( $response );
 
-	$argString = trim( $ARGS[ 'text' ] );
-	$argSwitchEndPos = strpos($argString, ' ');
-
-	if( 0 === strpos($argString, '-') )
-	{
-		if( false !== $argSwitchEndPos ) {
-			$argSwitch = substr($argString, 1, $argSwitchEndPos);
-			$argString = substr($argString, trim($argSwitchEndPos+1) );
-		} else {
-			$argSwitch = substr($argString, 1);
-			$argString = null;
-		}
-
-		switch( $argSwitch )
-		{
-
-			case '?':
-
-				$response = new SlackResponse();
-				$response->addAttachment( new SlackResponseAttachment("version " . APP_VERSION_NUMBER . " (" . APP_VERSION_DATE . ")\n© " . date('Y') . " Alden Gillespy", "About Weatherman") );
-				header('Content-Type: application/json');
-				http_response_code(200);
-				echo json_encode( $response );
-				die();
-		}
-	}
-
-	if( isset($argString) )
-	{
-	try {
-		// translate the argument into a coordinates tuple.
-		$geocodingApi = new GeocodingApi( GEOCODING_API_SECRET );
-		$geodata = $geocodingApi->locate( $argString );
-
-		$weatherRequestParams[ 'latitude' ] 	= $geodata[ 'latitude' ];
-		$weatherRequestParams[ 'longitude' ]	= $geodata[ 'longitude' ];
-		$weatherRequestParams[ 'location' ]		= 'for ' . $geodata[ 'location' ];
-	}
-	catch( InvalidZipcodeException $e )
-	{
-		// for now, we do nothing here, as we've already set defaults.
-	}
-	}
-
+/**
+* Renders an HTTP response containing a Slack-interprerable JSON body.
+*
+* @param SlackResponse
+*/
+function render_response( SlackResponse $response ) {
+	header( 'Content-Type: application/json' );
+	http_response_code(200);
+	echo json_encode( $response );
+	exit;
 }
 
-	$weatherData = requestWeather( $weatherRequestParams );
+die;
 
-	$slackResponse = new SlackResponse( 'Current conditions ' . $weatherRequestParams[ 'location' ] );
-
-	$weather = $weatherData->{$weatherRequestParams['forecastType']}; // i.e. `currently`
-	$responseDetailsText = ( DarkskyDataPoint::ICON_EMOJI_CODES[$weather->icon] . ' *' . (int) $weather->temperature ) . '°* ' . $weather->summary . " \n winds " . ( (int) $weather->windSpeed ) . ' mph from ' . DarkskyDataPoint::convertDegreesToCompass( $weather->windBearing );
-	$slackResponse->addAttachment( new SlackResponseAttachment( $responseDetailsText ) );
-
-	header( 'Content-Type: application/json' );
-http_response_code(200);
-
-	echo json_encode( $slackResponse );
 
 /**
 	* Sends a REST message to Slack, to report a use of the `/weather` slash command.
@@ -146,43 +125,4 @@ function sendAdminNotification()
 		]
 	];
 	transmitRestRequest( $data );
-}
-
-/**
-	* A generic method which transmits a RESTful request.
-	*
-	* @param	array		The request's payload (e.g. message body and metadata)
-	*
-	* @return	object	A formal representation of the response.
-	*/
-function transmitRestRequest( $data )
-{
-
-}
-
-/**
-	* Retrieves a weather report for a specified location.
-	*
-	* NOTE: Request may contain ONLY ONE valid data block per request. (In other words: requests are invalid whenever they ask for two or more data blocks.)
-	*/
-function requestWeather( $requestParams )
-{
-
-	$urlSegments = [
-		DARKSKY_API_SECRET,
-		$requestParams[ 'latitude' ] . ',' . $requestParams[ 'longitude' ],
-	];
-
-	$queryParams	= [
-		'exclude'	=> implode( ',', array_diff( DarkskyApi::VALID_DATA_BLOCKS, (array) $requestParams[ 'forecastType' ] ) ),
-		'units'		=> 'us',
-		// 'extend'	=> 'hourly',
-		// 'lang'		=> 'en', // default is imperial units (`us`)
-	];
-
-	$url = DarkskyApi::makeEndpointUrl( DEFAULT_ENDPOINT_NAME, $urlSegments, $queryParams );
-
-	$response = file_get_contents( $url );
-
-	return json_decode( $response );
 }
