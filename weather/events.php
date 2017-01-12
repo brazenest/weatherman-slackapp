@@ -7,7 +7,7 @@
 	* @copyright 2016 Alden Gillespy
 	* @license Proprietary. All rights reserved.
 	* @author Alden Gillespy
-	* @version 1.2.2
+	* @version 1.3.0
 	* @since 1.0
 	* @package AldenG_Slackapps
 	*/
@@ -19,8 +19,8 @@ use AldenG\SlackSdk\Response as SlackResponse;
 use AldenG\SlackSdk\ResponseAttachment as SlackResponseAttachment;
 
 // App descriptors:
-define( 'APP_VERSION_NUMBER',					'1.2.2' );
-define( 'APP_VERSION_DATE',						'2016-11-02' );
+define( 'APP_VERSION_NUMBER',					'1.3.0' );
+define( 'APP_VERSION_DATE',						'2016-12-26' );
 
 // Requirements:
 define( 'SLACK_VERIFICATION_TOKEN', 	'GOVlJ1oq7g70YUI8v31thfpB' );
